@@ -77,17 +77,30 @@ class Wifibacon(object):
                 packet = StringIO()
 
 def main():
-    p = subprocess.Popen("tshark -i wlp3s0 -I -y IEEE802_11_RADIO -T pdml",
-                         shell=True, stdout=subprocess.PIPE)
-    if len(sys.argv) > 1:
-        outfile = open(sys.argv[1], "w")
+
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--infile')
+    parser.add_argument('--outfile')
+    args = parser.parse_args()
+
+    if args.outfile:
+        outfile = open(args.outfile, "w")
     else:
         outfile = None
-    infile = p.stdout
+
+    p = None
+    if args.infile:
+        infile = open(args.infile)
+    else:
+        p = subprocess.Popen("tshark -i wlp3s0 -I -y IEEE802_11_RADIO -T pdml",
+                             shell=True, stdout=subprocess.PIPE)
+        infile = p.stdout
+
     w = Wifibacon()
     try:
         w.read_from_file(infile, outfile)
-    except KeyboardInterrupt:
+    finally:
         w.print_report()
 
 if __name__ == '__main__':
