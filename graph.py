@@ -73,7 +73,7 @@ class Wifibacon(object):
         print("strict digraph {")
         for k1 in self.seen:
             for k2 in self.seen[k1]:
-                #if 'k1' == '?' or 'k2' == '?':
+                #if k1 == '?' or k2 == '?':
                 #    continue
                 if k1 in self.announces:
                     k1 += '\\nAnnounces: ' + ',\\n'.join(self.announces[k1])
