@@ -125,6 +125,8 @@ def main():
     w = Wifibacon()
     try:
         w.read_from_file(infile, outfile)
+    except KeyboardInterrupt:
+        pass
     finally:
         w.print_report()
 
