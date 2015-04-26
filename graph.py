@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+"""
+Sniffs on the WiFi network and generates a graph showing the communication
+between the devices, including information about the announced SSIDs.
+
+Author: Jacek Wielemborek, licensed under WTFPL
+"""
+
 import subprocess
 import sys
 from StringIO import StringIO
@@ -13,6 +20,12 @@ class Wifibacon(object):
         self.announces = defaultdict(list)
 
     def parse_packet(self, packet_str):
+        """
+        Parses a <packet></packet> XML string, returning information about the
+        sender, receiver and the announced networks. If sender or receiver is
+        not known, returns '?' in its place. If SSID is not announced, None
+        is returned.
+        """
         d = {}
         ssid = None
         for line in packet_str.split("\n"):
@@ -39,6 +52,10 @@ class Wifibacon(object):
         return from_mac, to_mac, ssid
 
     def handle_packet(self, from_mac, to_mac, ssid):
+        """
+        Handles information about noticing a given packet in order to prepare
+        it for reporting.
+        """
         self.seen[from_mac][to_mac] += 1
         if ssid:
             found = self.announces[from_mac]
@@ -49,6 +66,9 @@ class Wifibacon(object):
                 self.announces[from_mac] += [ssid]
 
     def print_report(self):
+        """
+        Prints out a DOT file based on the gathered information.
+        """
         print("strict digraph {")
         for k1 in self.seen:
             for k2 in self.seen[k1]:
@@ -62,6 +82,10 @@ class Wifibacon(object):
         print("}")
 
     def read_from_file(self, infile, outfile=None):
+        """
+        Reads the output of tshark -T pdml. If outfile is specified,
+        the information is also saved to the outfile.
+        """
         packet = StringIO()
         while True:
             line = infile.readline()
