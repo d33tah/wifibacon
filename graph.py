@@ -97,8 +97,8 @@ class Wifibacon(object):
                 outfile.write(line)
             if '</packet>' in line:
                 packet_str = packet.getvalue()
-                from_mac, to_mac, ssid = self.parse_packet(packet_str)
-                self.handle_packet(from_mac, to_mac, ssid)
+                packet_info = self.parse_packet(packet_str)
+                self.handle_packet(*packet_info)
                 packet = StringIO()
 
 def main():
