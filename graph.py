@@ -43,9 +43,10 @@ class Wifibacon(object):
                     sys.stderr.write("WTF: SSID: %s vs %s" % (repr(ssid),
                                      repr(field.get('show'))))
                 ssid = field.get('show')
-        if d.get('wlan.ta') != d.get('wlan.sa'):
-            sys.stderr.write("WTF: sa=%s != ra=%s" %
-                             (repr(d.get('wlan.ta')), repr(d.get('wlan.ta'))))
+        if d.get('wlan.ta') != d.get('wlan.sa') \
+                and d.get('wlan.ta') != None and d.get('wlan.sa') != None:
+            sys.stderr.write("WTF: ta=%s != sa=%s\n" %
+                             (repr(d.get('wlan.ta')), repr(d.get('wlan.sa'))))
         to_mac = d.get('wlan.ra', '?') \
             if d.get('wlan.ra') != 'ffffffffffff' else '?'
         from_mac = d.get('wlan.ta', '?') or d.get('wlan.sa', '?')
