@@ -4,6 +4,10 @@
 Sniffs on the WiFi network and generates a graph showing the communication
 between the devices, including information about the announced SSIDs.
 
+Example usage (the "timeout" kills wifimap after 5s):
+
+    timeout --foreground  -s INT 5s wifimap | dot -Tsvg > out.svg
+
 Author: Jacek Wielemborek, licensed under WTFPL
 """
 
