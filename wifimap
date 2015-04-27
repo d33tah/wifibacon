@@ -19,6 +19,7 @@ from StringIO import StringIO
 from lxml import etree
 from collections import defaultdict
 
+
 class Wifibacon(object):
 
     def __init__(self):
@@ -50,7 +51,8 @@ class Wifibacon(object):
                                      repr(field.get('show'))))
                 ssid = field.get('show')
         if d.get('wlan.ta') != d.get('wlan.sa') \
-                and d.get('wlan.ta') != None and d.get('wlan.sa') != None:
+                and d.get('wlan.ta') is not None \
+                and d.get('wlan.sa') is not None:
             sys.stderr.write("WTF: ta=%s != sa=%s\n" %
                              (repr(d.get('wlan.ta')), repr(d.get('wlan.sa'))))
         to_mac = d.get('wlan.ra', '?') \
@@ -68,7 +70,7 @@ class Wifibacon(object):
             found = self.announces[from_mac]
             if len(found) != 0 and ssid not in found:
                 sys.stderr.write('WTF: two ssids: %s, %s, %s\n' %
-                    (from_mac, ssid, found))
+                                 (from_mac, ssid, found))
             if ssid not in found:
                 self.announces[from_mac] += [ssid]
 
@@ -107,11 +109,12 @@ class Wifibacon(object):
                 self.handle_packet(*packet_info)
                 packet = StringIO()
 
+
 def main():
 
-    import argparse
-    parser = argparse.ArgumentParser(description=__doc__,
-        formatter_class=argparse.RawTextHelpFormatter)
+    from argparse import ArgumentParser, RawTextHelpFormatter
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawTextHelpFormatter)
     parser.add_argument('--infile')
     parser.add_argument('--outfile')
     args = parser.parse_args()
