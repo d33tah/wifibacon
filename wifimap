@@ -15,9 +15,71 @@ Author: Jacek Wielemborek, licensed under WTFPL
 
 import subprocess
 import sys
+import time
+import re
+import threading
 from StringIO import StringIO
 from lxml import etree
 from collections import defaultdict
+
+
+def can_do_sudo():
+    """Tells whether we can run sudo without being asked for password."""
+    p = subprocess.Popen("SUDO_ASKPASS=/usr/bin/false sudo -A true",
+                         shell=True)
+    p.communicate()
+    return p.returncode == 0
+
+
+class ChannelHopper(threading.Thread):
+    """A channel hopper thread. Switches the Wireless channel periodically."""
+
+    def __init__(self, interval, iface):
+        """
+        Constructs a ChannelHopper instance.
+
+        Args:
+
+          interval - the time between channel switches
+          iface - the interface to perform switching on
+        """
+        threading.Thread.__init__(self)
+        self.running = True
+        self.interval = interval
+        self.iface = iface
+
+    def get_frequency(self):
+        """Returns the current frequency of the interface."""
+        s = subprocess.check_output(["iwconfig", self.iface])
+        return re.findall('Frequency:([^ ]+)', s)[0]
+
+    def run(self):
+        if not can_do_sudo():
+            sys.stderr.write("Could not run passwordless sudo - channel hopper"
+                             " skipped.\n")
+            return
+        else:
+            sys.stderr.write("Channel hopper started.\n")
+        start = self.get_frequency()
+        channel = 1
+        try:
+            while self.running:
+                x = subprocess.call(['sudo', '-A',
+                                     'iwconfig', self.iface, 'channel',
+                                     str(channel)], stderr=subprocess.PIPE)
+                if x != 0:
+                    channel = 0
+                time.sleep(self.interval)
+                channel += 1
+        finally:
+            subprocess.call(['sudo', '-A',
+                             'iwconfig', self.iface, 'freq', start])
+            end = self.get_frequency()
+            if start != end:
+                sys.stderr.write("WTF: Could not restore the "
+                                 "frequency (%s vs %s)\n" % (start, end))
+            else:
+                sys.stderr.write("Channel hopper stopped.\n")
 
 
 class Wifibacon(object):
@@ -74,15 +136,15 @@ class Wifibacon(object):
             if ssid not in found:
                 self.announces[from_mac] += [ssid]
 
-    def print_report(self):
+    def print_report(self, skip_broadcast=False):
         """
         Prints out a DOT file based on the gathered information.
         """
         print("strict digraph {")
         for k1 in self.seen:
             for k2 in self.seen[k1]:
-                #if k1 == '?' or k2 == '?':
-                #    continue
+                if skip_broadcast and (k1 == '?' or k2 == '?'):
+                    continue
                 if k1 in self.announces:
                     k1 += '\\nAnnounces: ' + ',\\n'.join(self.announces[k1])
                 if k2 in self.announces:
@@ -117,6 +179,10 @@ def main():
                             formatter_class=RawTextHelpFormatter)
     parser.add_argument('--infile')
     parser.add_argument('--outfile')
+    parser.add_argument('--skip-broadcast', action='store_true')
+    parser.add_argument('--no-channel-hop', action='store_true')
+    parser.add_argument('--channel-hop-interval', type=float, default=5)
+    parser.add_argument('--iface', default='wlp3s0')
     args = parser.parse_args()
 
     if args.outfile:
@@ -133,12 +199,18 @@ def main():
         infile = p.stdout
 
     w = Wifibacon()
+    if not args.no_channel_hop:
+        c = ChannelHopper(interval=args.channel_hop_interval, iface=args.iface)
+        c.start()
     try:
         w.read_from_file(infile, outfile)
     except KeyboardInterrupt:
         pass
     finally:
-        w.print_report()
+        w.print_report(args.skip_broadcast)
+        if not args.no_channel_hop:
+            c.running = False
+            c.join()
 
 if __name__ == '__main__':
     main()
