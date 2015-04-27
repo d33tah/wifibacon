@@ -2,7 +2,9 @@
 
 """
 Sniffs on the WiFi network and generates a graph showing the communication
-between the devices, including information about the announced SSIDs.
+between the devices, including information about the announced SSIDs. Will
+loop infinitely - kill the program with SIGINT in order to stop it
+gracefully.
 
 Example usage (the "timeout" kills wifimap after 5s):
 
