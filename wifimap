@@ -8,7 +8,7 @@ gracefully.
 
 Example usage (the "timeout" kills wifimap after 5s):
 
-    timeout --foreground  -s INT 5s wifimap | dot -Tsvg > out.svg
+    timeout --foreground -s INT 5s wifimap | dot -Tsvg > out.svg
 
 Author: Jacek Wielemborek, licensed under WTFPL
 """
