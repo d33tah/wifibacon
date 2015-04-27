@@ -194,8 +194,9 @@ def main():
     if args.infile:
         infile = open(args.infile)
     else:
-        p = subprocess.Popen("tshark -i wlp3s0 -I -y IEEE802_11_RADIO -T pdml",
-                             shell=True, stdout=subprocess.PIPE)
+        p = subprocess.Popen(["tshark", "-i", args.iface, "-I",
+                              "-y", "IEEE802_11_RADIO", "-T", "pdml"],
+                             stdout=subprocess.PIPE)
         infile = p.stdout
 
     w = Wifibacon()
