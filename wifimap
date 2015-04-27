@@ -177,12 +177,22 @@ def main():
     from argparse import ArgumentParser, RawTextHelpFormatter
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawTextHelpFormatter)
-    parser.add_argument('--infile')
-    parser.add_argument('--outfile')
-    parser.add_argument('--skip-broadcast', action='store_true')
-    parser.add_argument('--no-channel-hop', action='store_true')
-    parser.add_argument('--channel-hop-interval', type=float, default=5)
-    parser.add_argument('--iface', default='wlp3s0')
+    parser.add_argument('--infile', help='file to read the PDML data'
+                        ' from instead of sniffing')
+    parser.add_argument('--outfile', help='file to save the a copy of PDML'
+                        ' data to while sniffing')
+    parser.add_argument('--skip-broadcast', action='store_true', help='do not'
+                        ' draw broadcast connections - this will remove some'
+                        ' results')
+    parser.add_argument('--no-channel-hop', action='store_true', help='do not'
+                        ' attempt channel hopping even if possible - might'
+                        ' give more results')
+    parser.add_argument('--channel-hop-interval', type=float, default=5,
+                        help='channel hopping interval in seconds'
+                        ' (default: 5.0)')
+    parser.add_argument('--iface', default='wlp3s0', help='name of the WLAN'
+                        ' interface to perform sniffing and hopping on'
+                        ' (default: wlp3s0)')
     args = parser.parse_args()
 
     if args.outfile:
