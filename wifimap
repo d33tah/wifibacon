@@ -178,7 +178,7 @@ def main():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawTextHelpFormatter)
     parser.add_argument('--infile', help='file to read the PDML data'
-                        ' from instead of sniffing')
+                        ' from instead of sniffing (implies --no-channel-hop)')
     parser.add_argument('--outfile', help='file to save the a copy of PDML'
                         ' data to while sniffing')
     parser.add_argument('--skip-broadcast', action='store_true', help='do not'
@@ -203,6 +203,7 @@ def main():
     p = None
     if args.infile:
         infile = open(args.infile)
+        args.no_channel_hop = True
     else:
         p = subprocess.Popen(["tshark", "-i", args.iface, "-I",
                               "-y", "IEEE802_11_RADIO", "-T", "pdml"],
