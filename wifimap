@@ -174,13 +174,14 @@ class Wifibacon(object):
 
 def main():
 
-    from argparse import ArgumentParser, RawTextHelpFormatter
+    from argparse import ArgumentParser, RawTextHelpFormatter, FileType
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawTextHelpFormatter)
     parser.add_argument('--infile', help='file to read the PDML data'
-                        ' from instead of sniffing (implies --no-channel-hop)')
+                        ' from instead of sniffing (implies'
+                        ' --no-channel-hop)', type=FileType('r'))
     parser.add_argument('--outfile', help='file to save the a copy of PDML'
-                        ' data to while sniffing')
+                        ' data to while sniffing', type=FileType('w'))
     parser.add_argument('--skip-broadcast', action='store_true', help='do not'
                         ' draw broadcast connections - this will remove some'
                         ' results')
@@ -195,27 +196,21 @@ def main():
                         ' (default: wlp3s0)')
     args = parser.parse_args()
 
-    if args.outfile:
-        outfile = open(args.outfile, "w")
-    else:
-        outfile = None
-
     p = None
     if args.infile:
-        infile = open(args.infile)
         args.no_channel_hop = True
     else:
         p = subprocess.Popen(["tshark", "-i", args.iface, "-I",
                               "-y", "IEEE802_11_RADIO", "-T", "pdml"],
                              stdout=subprocess.PIPE)
-        infile = p.stdout
+        args.infile = p.stdout
 
     w = Wifibacon()
     if not args.no_channel_hop:
         c = ChannelHopper(interval=args.channel_hop_interval, iface=args.iface)
         c.start()
     try:
-        w.read_from_file(infile, outfile)
+        w.read_from_file(args.infile, args.outfile)
     except KeyboardInterrupt:
         pass
     finally:
