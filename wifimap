@@ -10,6 +10,11 @@ Example usage (the "timeout" kills wifimap after 5s):
 
     timeout --foreground -s INT 5s wifimap | dot -Tsvg > out.svg
 
+TODO:
+    * split wifimap into sniffing and graphing programs, maybe also ch-hopping
+    * verify if there's a bug related to 'Announces' being printed with wrong
+      source
+
 Author: Jacek Wielemborek, licensed under WTFPL
 """
 
