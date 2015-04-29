@@ -13,9 +13,12 @@ Example usage (the "timeout" kills wifimap after 5s):
     timeout --foreground -s INT 5s wifimap | dot -Tsvg > out.svg
 
 TODO:
+    * make channel hopping more intelligent, staying longer on better channels
     * split wifimap into sniffing and graphing programs, maybe also ch-hopping
     * verify if there's a bug related to 'Announces' being printed with wrong
       source
+    * maybe keep stats about the connection recency and allow to only display
+      connections from last N seconds?
 
 Author: Jacek Wielemborek, licensed under WTFPL
 """
