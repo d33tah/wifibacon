@@ -4,7 +4,9 @@
 Sniffs on the WiFi network and generates a graph showing the communication
 between the devices, including information about the announced SSIDs. Will
 loop infinitely - kill the program with SIGINT in order to stop it
-gracefully.
+gracefully. You can also use SIGUSR1 to force the generation of the graph
+without killing the program - useful for the periodic generation of the
+visuals.
 
 Example usage (the "timeout" kills wifimap after 5s):
 
@@ -26,6 +28,7 @@ import threading
 from StringIO import StringIO
 from lxml import etree
 from collections import defaultdict
+import signal
 
 
 def can_do_sudo():
@@ -177,6 +180,22 @@ class Wifibacon(object):
                 packet = StringIO()
 
 
+def get_dump_wifimap(w, skip_broadcast):
+    """
+    Returns a closure that is supposed to work as a signal handler. It can be
+    used when SIGUSR1 is received to force the generation of the report at the
+    given time.
+    """
+    def dump_wifimap(*args, **kwargs):
+        try:
+            sys.stdout.seek(0)
+        except IOError:
+            pass
+        w.print_report(skip_broadcast)
+        sys.stdout.flush()
+    return dump_wifimap
+
+
 def main():
 
     from argparse import ArgumentParser, RawTextHelpFormatter, FileType
@@ -214,6 +233,7 @@ def main():
     if not args.no_channel_hop:
         c = ChannelHopper(interval=args.channel_hop_interval, iface=args.iface)
         c.start()
+    signal.signal(signal.SIGUSR1, get_dump_wifimap(w, args.skip_broadcast))
     try:
         w.read_from_file(args.infile, args.outfile)
     except KeyboardInterrupt:
