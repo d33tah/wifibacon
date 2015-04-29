@@ -90,7 +90,7 @@ class ChannelHopper(threading.Thread):
                 sys.stderr.write("Channel hopper stopped.\n")
 
 
-class Wifibacon(object):
+class Wifimap(object):
 
     def __init__(self):
         self.seen = defaultdict(lambda: defaultdict(int))
@@ -229,7 +229,7 @@ def main():
                              stdout=subprocess.PIPE)
         args.infile = p.stdout
 
-    w = Wifibacon()
+    w = Wifimap()
     if not args.no_channel_hop:
         c = ChannelHopper(interval=args.channel_hop_interval, iface=args.iface)
         c.start()
