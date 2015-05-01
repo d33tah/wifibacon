@@ -20,6 +20,8 @@ TODO:
     * maybe keep stats about the connection recency and allow to only display
       connections from last N seconds?
 
+Requires "tshark" application, which is provided by Wireshark.
+
 Author: Jacek Wielemborek, licensed under WTFPL
 """
 
