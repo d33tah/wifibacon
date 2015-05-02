@@ -38,10 +38,10 @@ import signal
 
 def can_do_sudo():
     """Tells whether we can run sudo without being asked for password."""
-    p = subprocess.Popen("SUDO_ASKPASS=/usr/bin/false sudo -A true",
-                         shell=True)
-    p.communicate()
-    return p.returncode == 0
+    sudo_true_p = subprocess.Popen("SUDO_ASKPASS=/usr/bin/false sudo -A true",
+                                   shell=True)
+    sudo_true_p.communicate()
+    return sudo_true_p.returncode == 0
 
 
 class ChannelHopper(threading.Thread):
@@ -63,8 +63,8 @@ class ChannelHopper(threading.Thread):
 
     def get_frequency(self):
         """Returns the current frequency of the interface."""
-        s = subprocess.check_output(["iwconfig", self.iface])
-        return re.findall('Frequency:([^ ]+)', s)[0]
+        iwconfig_output = subprocess.check_output(["iwconfig", self.iface])
+        return re.findall('Frequency:([^ ]+)', iwconfig_output)[0]
 
     def run(self):
         if not can_do_sudo():
@@ -77,10 +77,11 @@ class ChannelHopper(threading.Thread):
         channel = 1
         try:
             while self.running:
-                x = subprocess.call(['sudo', '-A',
-                                     'iwconfig', self.iface, 'channel',
-                                     str(channel)], stderr=subprocess.PIPE)
-                if x != 0:
+                retcode = subprocess.call(['sudo', '-A',
+                                           'iwconfig', self.iface, 'channel',
+                                           str(channel)],
+                                          stderr=subprocess.PIPE)
+                if retcode != 0:
                     channel = 0
                 time.sleep(self.interval)
                 channel += 1
@@ -108,7 +109,7 @@ class Wifimap(object):
         not known, returns '?' in its place. If SSID is not announced, None
         is returned.
         """
-        d = {}
+        packet_dict = {}
         ssid = None
         for line in packet_str.split("\n"):
             if '"wlan.ra"' in line or '"wlan.ta"' in line \
@@ -117,22 +118,24 @@ class Wifimap(object):
                 if 'ff:ff:ff:ff:ff:ff' in field.get('showname'):
                     continue
                 name = field.get('name')
-                d[name] = field.get('showname').split(': ')[1]
-                d[name] = d[name].replace(' ', '\\n')
+                packet_dict[name] = field.get('showname').split(': ')[1]
+                packet_dict[name] = packet_dict[name].replace(' ', '\\n')
             if '"wlan_mgt.ssid"' in line:
                 field = etree.fromstring(line)
                 if ssid is not None and field.get('show') != ssid:
                     sys.stderr.write("WTF: SSID: %s vs %s" % (repr(ssid),
                                      repr(field.get('show'))))
                 ssid = field.get('show')
-        if d.get('wlan.ta') != d.get('wlan.sa') \
-                and d.get('wlan.ta') is not None \
-                and d.get('wlan.sa') is not None:
+        if packet_dict.get('wlan.ta') != packet_dict.get('wlan.sa') \
+                and packet_dict.get('wlan.ta') is not None \
+                and packet_dict.get('wlan.sa') is not None:
             sys.stderr.write("WTF: ta=%s != sa=%s\n" %
-                             (repr(d.get('wlan.ta')), repr(d.get('wlan.sa'))))
-        to_mac = d.get('wlan.ra', '?') \
-            if d.get('wlan.ra') != 'ffffffffffff' else '?'
-        from_mac = d.get('wlan.ta', '?') or d.get('wlan.sa', '?')
+                             (repr(packet_dict.get('wlan.ta')),
+                              repr(packet_dict.get('wlan.sa'))))
+        to_mac = packet_dict.get('wlan.ra', '?') \
+            if packet_dict.get('wlan.ra') != 'ffffffffffff' else '?'
+        from_mac = packet_dict.get('wlan.ta', '?') or \
+            packet_dict.get('wlan.sa', '?')
         return from_mac, to_mac, ssid
 
     def handle_packet(self, from_mac, to_mac, ssid):
@@ -154,15 +157,17 @@ class Wifimap(object):
         Prints out a DOT file based on the gathered information.
         """
         print("strict digraph {")
-        for k1 in self.seen:
-            for k2 in self.seen[k1]:
-                if skip_broadcast and (k1 == '?' or k2 == '?'):
+        for from_mac in self.seen:
+            for to_mac in self.seen[from_mac]:
+                if skip_broadcast and (from_mac == '?' or to_mac == '?'):
                     continue
-                if k1 in self.announces:
-                    k1 += '\\nAnnounces: ' + ',\\n'.join(self.announces[k1])
-                if k2 in self.announces:
-                    k2 += '\\nAnnounces: ' + ',\\n'.join(self.announces[k2])
-                print('"%s" -> "%s";' % (k1, k2))
+                if from_mac in self.announces:
+                    from_mac += '\\nAnnounces: '
+                    from_mac += ',\\n'.join(self.announces[from_mac])
+                if to_mac in self.announces:
+                    to_mac += '\\nAnnounces: '
+                    to_mac += ',\\n'.join(self.announces[to_mac])
+                print('"%s" -> "%s";' % (from_mac, to_mac))
         print("}")
 
     def read_from_file(self, infile, outfile=None):
@@ -185,7 +190,7 @@ class Wifimap(object):
                 packet = StringIO()
 
 
-def get_dump_wifimap(w, skip_broadcast):
+def get_dump_wifimap(wmap, skip_broadcast):
     """
     Returns a closure that is supposed to work as a signal handler. It can be
     used when SIGUSR1 is received to force the generation of the report at the
@@ -196,7 +201,7 @@ def get_dump_wifimap(w, skip_broadcast):
             sys.stdout.seek(0)
         except IOError:
             pass
-        w.print_report(skip_broadcast)
+        wmap.print_report(skip_broadcast)
         sys.stdout.flush()
     return dump_wifimap
 
@@ -225,29 +230,30 @@ def main():
                         ' (default: wlp3s0)')
     args = parser.parse_args()
 
-    p = None
+    tshark_p = None
     if args.infile:
         args.no_channel_hop = True
     else:
-        p = subprocess.Popen(["tshark", "-i", args.iface, "-I",
-                              "-y", "IEEE802_11_RADIO", "-T", "pdml"],
-                             stdout=subprocess.PIPE)
-        args.infile = p.stdout
+        tshark_p = subprocess.Popen(["tshark", "-i", args.iface, "-I",
+                                     "-y", "IEEE802_11_RADIO", "-T", "pdml"],
+                                    stdout=subprocess.PIPE)
+        args.infile = tshark_p.stdout
 
-    w = Wifimap()
+    wmap = Wifimap()
     if not args.no_channel_hop:
-        c = ChannelHopper(interval=args.channel_hop_interval, iface=args.iface)
-        c.start()
-    signal.signal(signal.SIGUSR1, get_dump_wifimap(w, args.skip_broadcast))
+        ch_hopper = ChannelHopper(interval=args.channel_hop_interval,
+                          iface=args.iface)
+        ch_hopper.start()
+    signal.signal(signal.SIGUSR1, get_dump_wifimap(wmap, args.skip_broadcast))
     try:
-        w.read_from_file(args.infile, args.outfile)
+        wmap.read_from_file(args.infile, args.outfile)
     except KeyboardInterrupt:
         pass
     finally:
-        w.print_report(args.skip_broadcast)
+        wmap.print_report(args.skip_broadcast)
         if not args.no_channel_hop:
-            c.running = False
-            c.join()
+            ch_hopper.running = False
+            ch_hopper.join()
 
 if __name__ == '__main__':
     main()
