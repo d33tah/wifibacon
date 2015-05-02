@@ -22,6 +22,7 @@ TODO:
       source
     * maybe keep stats about the connection recency and allow to only display
       connections from last N seconds?
+    * detect whether wlan0 or wlp3s0 should be used by default
 
 Requires "tshark" application in PATH, which is provided by Wireshark.
 
