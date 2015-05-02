@@ -31,6 +31,8 @@ the user running it - you can add these by calling the following command:
 
 sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip /usr/sbin/tshark
 
+NOTE: This will only work if your Wi-Fi card supports sniffing.
+
 Author: Jacek Wielemborek, licensed under WTFPL
 """
 
