@@ -263,7 +263,7 @@ def main():
     wmap = Wifimap()
     if not args.no_channel_hop:
         ch_hopper = ChannelHopper(interval=args.channel_hop_interval,
-                          iface=args.iface)
+                                  iface=args.iface)
         ch_hopper.start()
     signal.signal(signal.SIGUSR1, get_dump_wifimap(wmap, args.skip_broadcast))
     try:
