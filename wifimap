@@ -12,6 +12,9 @@ Example usage (the "timeout" kills wifimap after 5s):
 
     timeout --foreground -s INT 5s wifimap | dot -Tsvg > out.svg
 
+The example assumes that you saved this script as "wifimap" with rights to
+being executed somewhere to your $PATH.
+
 TODO:
     * make channel hopping more intelligent, staying longer on better channels
     * split wifimap into sniffing and graphing programs, maybe also ch-hopping
@@ -20,7 +23,12 @@ TODO:
     * maybe keep stats about the connection recency and allow to only display
       connections from last N seconds?
 
-Requires "tshark" application, which is provided by Wireshark.
+Requires "tshark" application in PATH, which is provided by Wireshark.
+
+tshark also needs to grant sniffing privileges without running as root for
+the user running it - you can add these by calling the following command:
+
+sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service+eip /usr/sbin/tshark
 
 Author: Jacek Wielemborek, licensed under WTFPL
 """
@@ -195,8 +203,16 @@ def get_dump_wifimap(wmap, skip_broadcast):
     Returns a closure that is supposed to work as a signal handler. It can be
     used when SIGUSR1 is received to force the generation of the report at the
     given time.
+
+    Args:
+
+      wmap - a Wifimap instance that will be used for printing the report
+      skip_broadcast - a boolean value telling whether broadcasts should not
+        be reported
     """
     def dump_wifimap(*args, **kwargs):
+        # If sys.stdout is redirected to a file (as opposed to the terminal),
+        # this will make wifimap rewrite it.
         try:
             sys.stdout.seek(0)
         except IOError:
