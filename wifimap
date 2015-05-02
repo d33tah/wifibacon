@@ -250,9 +250,14 @@ def main():
     if args.infile:
         args.no_channel_hop = True
     else:
-        tshark_p = subprocess.Popen(["tshark", "-i", args.iface, "-I",
-                                     "-y", "IEEE802_11_RADIO", "-T", "pdml"],
-                                    stdout=subprocess.PIPE)
+        try:
+            tshark_p = subprocess.Popen(["tshark", "-i", args.iface,
+                                         "-I", "-y", "IEEE802_11_RADIO",
+                                         "-T", "pdml"],
+                                        stdout=subprocess.PIPE)
+        except OSError:
+            sys.exit("ERROR: Attempt to call tshark failed. "
+                     "Have you installed Wireshark? Is tshark in your $PATH?")
         args.infile = tshark_p.stdout
 
     wmap = Wifimap()
