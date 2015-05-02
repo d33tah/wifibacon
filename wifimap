@@ -24,7 +24,8 @@ TODO:
       connections from last N seconds?
     * detect whether wlan0 or wlp3s0 should be used by default
 
-Requires "tshark" application in PATH, which is provided by Wireshark.
+Requires "tshark" application in PATH, which is provided by Wireshark. Also,
+a Python library "lxml" needs to be installed.
 
 tshark also needs to grant sniffing privileges without running as root for
 the user running it - you can add these by calling the following command:
