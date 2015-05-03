@@ -173,13 +173,15 @@ class Wifimap(object):
             for to_mac in self.seen[from_mac]:
                 if skip_broadcast and (from_mac == '?' or to_mac == '?'):
                     continue
+                from_mac_display = from_mac
                 if from_mac in self.announces:
-                    from_mac += '\\nAnnounces: '
-                    from_mac += ',\\n'.join(self.announces[from_mac])
+                    from_mac_display += '\\nAnnounces: '
+                    from_mac_display += ',\\n'.join(self.announces[from_mac])
+                to_mac_display = to_mac
                 if to_mac in self.announces:
-                    to_mac += '\\nAnnounces: '
-                    to_mac += ',\\n'.join(self.announces[to_mac])
-                print('"%s" -> "%s";' % (from_mac, to_mac))
+                    to_mac_display += '\\nAnnounces: '
+                    to_mac_display += ',\\n'.join(self.announces[to_mac])
+                print('"%s" -> "%s";' % (from_mac_display, to_mac_display))
         print("}")
 
     def read_from_file(self, infile, outfile=None):
